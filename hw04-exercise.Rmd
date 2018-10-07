@@ -12,9 +12,80 @@ The goal of this assignment is to use data wrangling to solve realistic problems
 
 ```{r ImportLibraries, echo = FALSE}
 suppressPackageStartupMessages(library(tidyverse))
-suppressPackageStartupMessages(library(gapminder))
 ```
 
 ## Tasks
 
-### Task 1: 
+### Task 1: Data Reshaping - Activity 2
+
+This activity is described as follows:
+
+> Make a tibble with one row per year and columns for life expectancy for two or more countries.
+>
+>   - Use knitr::kable() to make this table look pretty in your rendered homework.
+>
+>   - Take advantage of this new data shape to scatterplot life expectancy for one country against that of another. \
+
+I will make the data for this assignment from the gapminder dataset. Forthis task, I will look at the life expectancy of `Canada`, the `United States`, the `United Kingdom`, and `China`.
+
+```{r task1MakeDataset}
+suppressPackageStartupMessages(library(gapminder))
+
+# Make the dataset for this assignment
+gapLifeExp = gapminder %>%
+    filter(country %in% c("Canada", "United States", "United Kingdom", "China")) %>%
+    select(country, year, lifeExp)
+```
+
+Now that I have the dataset prepared I can create the table. To create the desired table for display, I will need to reshape the data to put each of the countries into a column. This can be performed by the `spread()` function, which will make the chosen keys, countries, into columns and place the values, life expectancy, into the rows. I will store this in a variable with a descriptive name `gapLifeExpSpread`, so I can use it to generate a scatterplot later.
+
+```{r task1ReshapeData}
+gapLifeExpSpread = gapLifeExp %>%
+    spread(key = country, value = lifeExp)
+```
+
+To create the table, I will be using the `kable` package. This package is intended to make tables more readable. 
+
+```{r task1MakeTable = 'asis'}
+gapLifeExpSpread %>%
+    knitr::kable(caption = 'Life Expectancy by Year', 
+                 format = 'markdown', 
+                 booktabs = TRUE, 
+                 longtable = TRUE)
+```
+
+This table is can now easily be used to make a scatter plot of the life expectancy of `Canada` vs that of the `China`, as they are in separate columns. I will also add a second order polynomial fit to give a sense of the trend over time.
+
+```{r task1MakePlot}
+gapLifeExpSpread %>%
+    ggplot(aes(x = China, y = Canada)) + 
+    geom_point(size = 3) +
+    stat_smooth(method = "gam", formula = y ~ poly(x,2), se = FALSE) +
+    theme_bw()
+```
+
+Note, the x and y axis do not have the same ranges. `China` experienced a much larger increase in life expectancy over this period than `Canada`, so it makes the plot much clearer if the axis have a different range of life expectancies. 
+
+From this plot, it is clear that `China` increased it's life expectancy from below fifty to above sixty at a much more rapid rate than `Canada`. After `China` had a life expectancy of low sixties, it's rate of growth slowed in relation to that of `Canada`.
+
+### Task 2: Joins - Activity 1
+
+This activity is described as follows:
+
+> Create a second data frame, complementary to Gapminder. Join this with (part of) Gapminder using a dplyr join function and make some observations about the process and 
+>
+> result. Explore the different types of joins. Examples of a second data frame you could build: 
+>
+>   - One row per country, a country variable and one or more variables with extra info, such as language spoken, NATO membership, national animal, or capitol city. 
+>
+>   - One row per continent, a continent variable and one or more variables with extra info, such as northern versus southern hemisphere. \
+
+To perform this task I will use another dataset that is complementary to gapminder. This dataset is from the `wbstats` library, which contains several dataframes of World Bank data. I will be using a subset of the dataset `wb_cachelist$countries` from this library, which contains information on each country. I will be using the capitals from this dataframe.
+
+I will have a line to install this package if you do not already have it. This can be disable by setting the argument `eval = FALSE` for the code chunk.
+
+```{r installWbStats}
+install.packages(wbstats)
+suppressPackageStartupMessages(library(wbstats))
+```
+
