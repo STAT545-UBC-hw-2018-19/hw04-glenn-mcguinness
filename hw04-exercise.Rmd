@@ -1,0 +1,20 @@
+---
+title: "STAT 545A - Homework 4: Tidy data and joins"
+author: Glenn McGuinness
+output: 
+    github_document:
+        toc: yes
+---
+
+## Introduction
+
+The goal of this assignment is to use data wrangling to solve realistic problems. One of the new tools to be used in this assignement will be data frame joins and reshaping. To this end, one data reshaping and one join prompt wil be taken from the given in the assignment. 
+
+```{r ImportLibraries, echo = FALSE}
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(gapminder))
+```
+
+## Tasks
+
+### Task 1: 
