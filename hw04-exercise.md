@@ -5,14 +5,15 @@ Glenn McGuinness
 -   [Introduction](#introduction)
 -   [Tasks](#tasks)
     -   [Task 1: Data Reshaping - Activity 2](#task-1-data-reshaping---activity-2)
-    -   [Task 2: Data Reshaping: Activity 3](#task-2-data-reshaping-activity-3)
+    -   [Task 2: Data Reshaping - Activity 3](#task-2-data-reshaping---activity-3)
+    -   [Task 3: Data Reshaping - Activity 4](#task-3-data-reshaping---activity-4)
     -   [Task 3: Joins - Activity 1](#task-3-joins---activity-1)
     -   [Task 4: Joins - Activity 3](#task-4-joins---activity-3)
 
 Introduction
 ------------
 
-The goal of this assignment is to use data wrangling to solve realistic problems. One of the new tools to be used in this assignement will be data frame joins and reshaping. To this end, one data reshaping and one join prompt wil be taken from the given in the assignment. I have also taken an additional data reshaping prompt and join prompt.
+The goal of this [assignment](http://stat545.com/Classroom/assignments/hw04/hw04.html) is to use data wrangling to solve realistic problems. One of the new tools to be used in this assignement will be data frame joins and reshaping. To this end, one data reshaping and one join prompt wil be taken from the given in the assignment. I have also taken two additional prompts, one for data reshaping and another for join.
 
 Tasks
 -----
@@ -86,7 +87,7 @@ Note, the x and y axis do not have the same ranges. `China` experienced a much l
 
 From this plot, it is clear that `China` increased it's life expectancy from below fifty to above sixty at a much more rapid rate than `Canada`. After `China` had a life expectancy of low sixties, it's rate of growth slowed in relation to that of `Canada`.
 
-### Task 2: Data Reshaping: Activity 3
+### Task 2: Data Reshaping - Activity 3
 
 I wanted to further explore data reshaping, so I decided to do another task. The task is described as follows:
 
@@ -169,6 +170,120 @@ gapminderLifeExpSummary %>%
 
 Overall, this form of reshaping makes it very easy to see the relationship across the key values in the reshaping, across two values in the rows. This is because `ggplot` expects that each variable specified in the aes function has a separate column. This reshaping produces a more natural shape for the above plots.
 
+### Task 3: Data Reshaping - Activity 4
+
+I chose to also do this task, as I wanted a more challenging data reshaping problem.
+
+This task is described as follows:
+
+> In Window functions, we formed a tibble with 24 rows: 2 per year, giving the country with both the lowest and highest life expectancy (in Asia). Take that table (or a similar one for all continents) and reshape it so you have one row per year or per year \* continent combination.
+
+For this task I have taken the provided code as a starting point. For this task, I will reshape the data to make a table that has one row per year. I want to have a column for the minimum lifeExp, the maximum lifeExp, the country with the minimum lifeExp, and the country with the maximum lifeExp.
+
+``` r
+# This is the code referenced by the task to use as the basis for this task
+# I will save the dataset for future use
+gapMinMax = gapminder %>%
+  filter(continent == "Asia") %>%
+  select(year, country, lifeExp) %>%
+  group_by(year) %>%
+  filter(min_rank(desc(lifeExp)) < 2 | min_rank(lifeExp) < 2) %>% 
+  arrange(year) %>%
+  print(n = Inf)
+```
+
+    ## # A tibble: 24 x 3
+    ## # Groups:   year [12]
+    ##     year country     lifeExp
+    ##    <int> <fct>         <dbl>
+    ##  1  1952 Afghanistan    28.8
+    ##  2  1952 Israel         65.4
+    ##  3  1957 Afghanistan    30.3
+    ##  4  1957 Israel         67.8
+    ##  5  1962 Afghanistan    32.0
+    ##  6  1962 Israel         69.4
+    ##  7  1967 Afghanistan    34.0
+    ##  8  1967 Japan          71.4
+    ##  9  1972 Afghanistan    36.1
+    ## 10  1972 Japan          73.4
+    ## 11  1977 Cambodia       31.2
+    ## 12  1977 Japan          75.4
+    ## 13  1982 Afghanistan    39.9
+    ## 14  1982 Japan          77.1
+    ## 15  1987 Afghanistan    40.8
+    ## 16  1987 Japan          78.7
+    ## 17  1992 Afghanistan    41.7
+    ## 18  1992 Japan          79.4
+    ## 19  1997 Afghanistan    41.8
+    ## 20  1997 Japan          80.7
+    ## 21  2002 Afghanistan    42.1
+    ## 22  2002 Japan          82  
+    ## 23  2007 Afghanistan    43.8
+    ## 24  2007 Japan          82.6
+
+``` r
+# This is a pretty long and complicated expression, so I will intersperse comments to make it easier
+# The goal of this is to have a column with the min/max lifeExp per year and the corresponding country for each year
+gapMinMax %>%
+  # Here we add a label based on whether there is a minimum or maximum lifeExp per year in each row 
+  group_by(year) %>%
+  mutate(minOrMax = ifelse(lifeExp == min(lifeExp), "MinCountry", "MaxCountry")) %>%
+  # Now, we wish to combine the country and lifeExp columns, so that we can spread based on the year easily
+  group_by(minOrMax) %>%
+  mutate(combined = paste(trimws(country), "_", lifeExp)) %>%
+  select(minOrMax, combined, year) %>%
+  spread(key = minOrMax, value = combined) %>%
+  # Now that the data is in the correct shape, we can split the combined column into two separate columns
+  separate(MinCountry, c("Country with Min lifeExp", "Min lifeExp"), sep = "_") %>%
+  separate(MaxCountry, c("Country with Max lifeExp", "Max lifeExp"), sep = "_") %>%
+  knitr::kable(booktabs = TRUE)
+```
+
+|  year| Country with Max lifeExp | Max lifeExp | Country with Min lifeExp | Min lifeExp |
+|-----:|:-------------------------|:------------|:-------------------------|:------------|
+|  1952| Israel                   | 65.39       | Afghanistan              | 28.801      |
+|  1957| Israel                   | 67.84       | Afghanistan              | 30.332      |
+|  1962| Israel                   | 69.39       | Afghanistan              | 31.997      |
+|  1967| Japan                    | 71.43       | Afghanistan              | 34.02       |
+|  1972| Japan                    | 73.42       | Afghanistan              | 36.088      |
+|  1977| Japan                    | 75.38       | Cambodia                 | 31.22       |
+|  1982| Japan                    | 77.11       | Afghanistan              | 39.854      |
+|  1987| Japan                    | 78.67       | Afghanistan              | 40.822      |
+|  1992| Japan                    | 79.36       | Afghanistan              | 41.674      |
+|  1997| Japan                    | 80.69       | Afghanistan              | 41.763      |
+|  2002| Japan                    | 82          | Afghanistan              | 42.129      |
+|  2007| Japan                    | 82.603      | Afghanistan              | 43.828      |
+
+The expression used to generate this table is quite long and complex. I did it this way to try to perform the task using the reshape functions in a single expression. However, I could also have performed this via a join in two expressions, or simple using the summarize function, as I will show below.
+
+``` r
+# This is a simpler version using summarize.
+# I did not do this originally, as it would defeat the purpose of the exercise, which is to learn the reshaping fucntionality of dplyr
+gapMinMax %>%
+  # Here we add a label based on whether there is a minimum or maximum lifeExp per year in each row 
+  group_by(year) %>%
+  summarize(minLifeExp = min(lifeExp), 
+            maxLifeExp = max(lifeExp),
+            minCountry = country[lifeExp == min(lifeExp)],
+            maxCountry = country[lifeExp == max(lifeExp)]) %>%
+  knitr::kable(booktabs = TRUE)
+```
+
+|  year|  minLifeExp|  maxLifeExp| minCountry  | maxCountry |
+|-----:|-----------:|-----------:|:------------|:-----------|
+|  1952|      28.801|      65.390| Afghanistan | Israel     |
+|  1957|      30.332|      67.840| Afghanistan | Israel     |
+|  1962|      31.997|      69.390| Afghanistan | Israel     |
+|  1967|      34.020|      71.430| Afghanistan | Japan      |
+|  1972|      36.088|      73.420| Afghanistan | Japan      |
+|  1977|      31.220|      75.380| Cambodia    | Japan      |
+|  1982|      39.854|      77.110| Afghanistan | Japan      |
+|  1987|      40.822|      78.670| Afghanistan | Japan      |
+|  1992|      41.674|      79.360| Afghanistan | Japan      |
+|  1997|      41.763|      80.690| Afghanistan | Japan      |
+|  2002|      42.129|      82.000| Afghanistan | Japan      |
+|  2007|      43.828|      82.603| Afghanistan | Japan      |
+
 ### Task 3: Joins - Activity 1
 
 This activity is described as follows:
@@ -206,7 +321,7 @@ Now that the dataset is present, let's try some different scenarios.
 
 First, lets try a scenario where we wish to get the `income` and `capitol` of each country for every row of the `gapminder` dataset. The `wbCountry` dataset does not have any year data, so we will need to join only on country, which is not unique. This table will be trimmed to `20` elements, so as to not fill up the document.
 
-I will store the subset of `wbCountry` in the variable `wbCountryJoin`, as I will use it several times.
+I will store the subset of `wbCountry` in the variable `wbCountryJoin`, as I will use it several times. Notice that the country names are stored in a character vector, rather than a factor vector, as they are in `gapminder`. This produces a warning, which is not of concern. Therefore, I will suppress the warnings in the following code segments.
 
 ``` r
 wbCountryJoin = wbCountry %>%
@@ -214,12 +329,9 @@ wbCountryJoin = wbCountry %>%
 
 wbCountryJoin %>%
     right_join(gapminder, by = "country") %>%
-    filter(row_number() < 20) %>%
+    head(20) %>%
     knitr::kable(booktabs = TRUE)
 ```
-
-    ## Warning: Column `country` joining character vector and factor, coercing
-    ## into character vector
 
 | country     | capital | income              | continent |  year|  lifeExp|       pop|  gdpPercap|
 |:------------|:--------|:--------------------|:----------|-----:|--------:|---------:|----------:|
@@ -242,6 +354,7 @@ wbCountryJoin %>%
 | Albania     | Tirane  | Upper middle income | Europe    |  1972|   67.690|   2263554|  3313.4222|
 | Albania     | Tirane  | Upper middle income | Europe    |  1977|   68.930|   2509048|  3533.0039|
 | Albania     | Tirane  | Upper middle income | Europe    |  1982|   70.420|   2780097|  3630.8807|
+| Albania     | Tirane  | Upper middle income | Europe    |  1987|   72.000|   3075321|  3738.9327|
 
 This table joined a subset of wbCountry to the `gapminder` dataset, repeating the `wbCountry` rows for each year. This is expected, as this was a right join, where the right data frame was the `gapminder` dataset, so it only kept rows with a key that matched `gapminder`. Further, the join repeated `wbCountry` columns when there were repetitions of a given country.
 
@@ -250,12 +363,9 @@ Let's see what happens when do the same operation, but with a right join.
 ``` r
 wbCountryJoin %>%
     left_join(gapminder, by = "country") %>%
-    filter(row_number() < 20) %>%
+    head(20) %>%
     knitr::kable(booktabs = TRUE)
 ```
-
-    ## Warning: Column `country` joining character vector and factor, coercing
-    ## into character vector
 
 | country     | capital    | income              | continent |  year|  lifeExp|       pop|  gdpPercap|
 |:------------|:-----------|:--------------------|:----------|-----:|--------:|---------:|----------:|
@@ -278,6 +388,7 @@ wbCountryJoin %>%
 | Angola      | Luanda     | Lower middle income | Africa    |  1962|   34.000|   4826015|  4269.2767|
 | Angola      | Luanda     | Lower middle income | Africa    |  1967|   35.985|   5247469|  5522.7764|
 | Angola      | Luanda     | Lower middle income | Africa    |  1972|   37.928|   5894858|  5473.2880|
+| Angola      | Luanda     | Lower middle income | Africa    |  1977|   39.483|   6162675|  3008.6474|
 
 The resulting data frame is very similar to the one before. The `wbCountry` rows were still replicated by year. Notice that there is now a country, Aruba, that was not present before. This is because this country is not present in `gapminder`, but is present in `wbCountry`, and this was a left join where the left data frame was `wbCountry`. However, all of the elements from this join are `NA`'s, which may not be useful.
 
@@ -286,12 +397,9 @@ If information from both datasets is necessary, an inner join can be used. Alter
 ``` r
 wbCountryJoin %>%
     inner_join(gapminder, by = "country") %>%
-    filter(row_number() < 20) %>%
+    head(20) %>%
     knitr::kable(booktabs = TRUE)
 ```
-
-    ## Warning: Column `country` joining character vector and factor, coercing
-    ## into character vector
 
 | country     | capital | income              | continent |  year|  lifeExp|       pop|  gdpPercap|
 |:------------|:--------|:--------------------|:----------|-----:|--------:|---------:|----------:|
@@ -314,16 +422,14 @@ wbCountryJoin %>%
 | Angola      | Luanda  | Lower middle income | Africa    |  1972|   37.928|   5894858|  5473.2880|
 | Angola      | Luanda  | Lower middle income | Africa    |  1977|   39.483|   6162675|  3008.6474|
 | Angola      | Luanda  | Lower middle income | Africa    |  1982|   39.942|   7016384|  2756.9537|
+| Angola      | Luanda  | Lower middle income | Africa    |  1987|   39.906|   7874230|  2430.2083|
 
 ``` r
 wbCountryJoin %>%
     full_join(gapminder, by = "country") %>%
-    filter(row_number() < 20) %>%
+    head(20) %>%
     knitr::kable(booktabs = TRUE)
 ```
-
-    ## Warning: Column `country` joining character vector and factor, coercing
-    ## into character vector
 
 | country     | capital    | income              | continent |  year|  lifeExp|       pop|  gdpPercap|
 |:------------|:-----------|:--------------------|:----------|-----:|--------:|---------:|----------:|
@@ -346,6 +452,7 @@ wbCountryJoin %>%
 | Angola      | Luanda     | Lower middle income | Africa    |  1962|   34.000|   4826015|  4269.2767|
 | Angola      | Luanda     | Lower middle income | Africa    |  1967|   35.985|   5247469|  5522.7764|
 | Angola      | Luanda     | Lower middle income | Africa    |  1972|   37.928|   5894858|  5473.2880|
+| Angola      | Luanda     | Lower middle income | Africa    |  1977|   39.483|   6162675|  3008.6474|
 
 The only difference between these joins are whether they do or don't keep rows with keys only present in one dataset. For example, notice the presence of Aruba in the full join, but not the inner join.
 
@@ -354,12 +461,9 @@ Another useful tool are filetering joins. These joins allow a dataset to be filt
 ``` r
 wbCountryJoin %>%
     semi_join(gapminder, by = "country") %>%
-    filter(row_number() < 20) %>%
+    head(20) %>%
     knitr::kable(booktabs = TRUE)
 ```
-
-    ## Warning: Column `country` joining character vector and factor, coercing
-    ## into character vector
 
 | country                  | capital      | income              |
 |:-------------------------|:-------------|:--------------------|
@@ -382,16 +486,14 @@ wbCountryJoin %>%
 | Botswana                 | Gaborone     | Upper middle income |
 | Central African Republic | Bangui       | Low income          |
 | Canada                   | Ottawa       | High income         |
+| Switzerland              | Bern         | High income         |
 
 ``` r
 wbCountryJoin %>%
     anti_join(gapminder, by = "country") %>%
-    filter(row_number() < 20) %>%
+    head(20) %>%
     knitr::kable(booktabs = TRUE)
 ```
-
-    ## Warning: Column `country` joining character vector and factor, coercing
-    ## into character vector
 
 | country                                             | capital          | income              |
 |:----------------------------------------------------|:-----------------|:--------------------|
@@ -414,6 +516,7 @@ wbCountryJoin %>%
 | Belize                                              | Belmopan         | Upper middle income |
 | Middle East & North Africa (IBRD-only countries)    | NA               | Aggregates          |
 | Bermuda                                             | Hamilton         | High income         |
+| Barbados                                            | Bridgetown       | High income         |
 
 These two datasets still only contain columns from `wbCountryJoin`, but are easily filtered based on whether they have keys in common with `gapminder`. While these are not true joins, they provide an easy API to perform filtering with a similar intuition to joins.
 
@@ -431,109 +534,47 @@ This dataset has one column that is in common with `gapminder`, `continent`. Let
 ``` r
 manualData %>%
     inner_join(gapminder, by = "country") %>%
+    head(20) %>%
     knitr::kable(bootabs = TRUE)
 ```
 
     ## Warning: Column `country` joining character vector and factor, coercing
     ## into character vector
 
-| country   | language   | continent.x | continent.y |  year|  lifeExp|        pop|  gdpPercap|
-|:----------|:-----------|:------------|:------------|-----:|--------:|----------:|----------:|
-| Albania   | Albanian   | Europe      | Europe      |  1952|   55.230|    1282697|   1601.056|
-| Albania   | Albanian   | Europe      | Europe      |  1957|   59.280|    1476505|   1942.284|
-| Albania   | Albanian   | Europe      | Europe      |  1962|   64.820|    1728137|   2312.889|
-| Albania   | Albanian   | Europe      | Europe      |  1967|   66.220|    1984060|   2760.197|
-| Albania   | Albanian   | Europe      | Europe      |  1972|   67.690|    2263554|   3313.422|
-| Albania   | Albanian   | Europe      | Europe      |  1977|   68.930|    2509048|   3533.004|
-| Albania   | Albanian   | Europe      | Europe      |  1982|   70.420|    2780097|   3630.881|
-| Albania   | Albanian   | Europe      | Europe      |  1987|   72.000|    3075321|   3738.933|
-| Albania   | Albanian   | Europe      | Europe      |  1992|   71.581|    3326498|   2497.438|
-| Albania   | Albanian   | Europe      | Europe      |  1997|   72.950|    3428038|   3193.055|
-| Albania   | Albanian   | Europe      | Europe      |  2002|   75.651|    3508512|   4604.212|
-| Albania   | Albanian   | Europe      | Europe      |  2007|   76.423|    3600523|   5937.030|
-| Austria   | German     | Europe      | Europe      |  1952|   66.800|    6927772|   6137.076|
-| Austria   | German     | Europe      | Europe      |  1957|   67.480|    6965860|   8842.598|
-| Austria   | German     | Europe      | Europe      |  1962|   69.540|    7129864|  10750.721|
-| Austria   | German     | Europe      | Europe      |  1967|   70.140|    7376998|  12834.602|
-| Austria   | German     | Europe      | Europe      |  1972|   70.630|    7544201|  16661.626|
-| Austria   | German     | Europe      | Europe      |  1977|   72.170|    7568430|  19749.422|
-| Austria   | German     | Europe      | Europe      |  1982|   73.180|    7574613|  21597.084|
-| Austria   | German     | Europe      | Europe      |  1987|   74.940|    7578903|  23687.826|
-| Austria   | German     | Europe      | Europe      |  1992|   76.040|    7914969|  27042.019|
-| Austria   | German     | Europe      | Europe      |  1997|   77.510|    8069876|  29095.921|
-| Austria   | German     | Europe      | Europe      |  2002|   78.980|    8148312|  32417.608|
-| Austria   | German     | Europe      | Europe      |  2007|   79.829|    8199783|  36126.493|
-| Australia | English    | Oceania     | Oceania     |  1952|   69.120|    8691212|  10039.596|
-| Australia | English    | Oceania     | Oceania     |  1957|   70.330|    9712569|  10949.650|
-| Australia | English    | Oceania     | Oceania     |  1962|   70.930|   10794968|  12217.227|
-| Australia | English    | Oceania     | Oceania     |  1967|   71.100|   11872264|  14526.125|
-| Australia | English    | Oceania     | Oceania     |  1972|   71.930|   13177000|  16788.629|
-| Australia | English    | Oceania     | Oceania     |  1977|   73.490|   14074100|  18334.198|
-| Australia | English    | Oceania     | Oceania     |  1982|   74.740|   15184200|  19477.009|
-| Australia | English    | Oceania     | Oceania     |  1987|   76.320|   16257249|  21888.889|
-| Australia | English    | Oceania     | Oceania     |  1992|   77.560|   17481977|  23424.767|
-| Australia | English    | Oceania     | Oceania     |  1997|   78.830|   18565243|  26997.937|
-| Australia | English    | Oceania     | Oceania     |  2002|   80.370|   19546792|  30687.755|
-| Australia | English    | Oceania     | Oceania     |  2007|   81.235|   20434176|  34435.367|
-| Bolivia   | Spanish    | Americas    | Americas    |  1952|   40.414|    2883315|   2677.326|
-| Bolivia   | Spanish    | Americas    | Americas    |  1957|   41.890|    3211738|   2127.686|
-| Bolivia   | Spanish    | Americas    | Americas    |  1962|   43.428|    3593918|   2180.973|
-| Bolivia   | Spanish    | Americas    | Americas    |  1967|   45.032|    4040665|   2586.886|
-| Bolivia   | Spanish    | Americas    | Americas    |  1972|   46.714|    4565872|   2980.331|
-| Bolivia   | Spanish    | Americas    | Americas    |  1977|   50.023|    5079716|   3548.098|
-| Bolivia   | Spanish    | Americas    | Americas    |  1982|   53.859|    5642224|   3156.510|
-| Bolivia   | Spanish    | Americas    | Americas    |  1987|   57.251|    6156369|   2753.691|
-| Bolivia   | Spanish    | Americas    | Americas    |  1992|   59.957|    6893451|   2961.700|
-| Bolivia   | Spanish    | Americas    | Americas    |  1997|   62.050|    7693188|   3326.143|
-| Bolivia   | Spanish    | Americas    | Americas    |  2002|   63.883|    8445134|   3413.263|
-| Bolivia   | Spanish    | Americas    | Americas    |  2007|   65.554|    9119152|   3822.137|
-| Bulgaria  | Bulgarian  | Europe      | Europe      |  1952|   59.600|    7274900|   2444.287|
-| Bulgaria  | Bulgarian  | Europe      | Europe      |  1957|   66.610|    7651254|   3008.671|
-| Bulgaria  | Bulgarian  | Europe      | Europe      |  1962|   69.510|    8012946|   4254.338|
-| Bulgaria  | Bulgarian  | Europe      | Europe      |  1967|   70.420|    8310226|   5577.003|
-| Bulgaria  | Bulgarian  | Europe      | Europe      |  1972|   70.900|    8576200|   6597.494|
-| Bulgaria  | Bulgarian  | Europe      | Europe      |  1977|   70.810|    8797022|   7612.240|
-| Bulgaria  | Bulgarian  | Europe      | Europe      |  1982|   71.080|    8892098|   8224.192|
-| Bulgaria  | Bulgarian  | Europe      | Europe      |  1987|   71.340|    8971958|   8239.855|
-| Bulgaria  | Bulgarian  | Europe      | Europe      |  1992|   71.190|    8658506|   6302.623|
-| Bulgaria  | Bulgarian  | Europe      | Europe      |  1997|   70.320|    8066057|   5970.389|
-| Bulgaria  | Bulgarian  | Europe      | Europe      |  2002|   72.140|    7661799|   7696.778|
-| Bulgaria  | Bulgarian  | Europe      | Europe      |  2007|   73.005|    7322858|  10680.793|
-| Cameroon  | French     | Africa      | Africa      |  1952|   38.523|    5009067|   1172.668|
-| Cameroon  | French     | Africa      | Africa      |  1957|   40.428|    5359923|   1313.048|
-| Cameroon  | French     | Africa      | Africa      |  1962|   42.643|    5793633|   1399.607|
-| Cameroon  | French     | Africa      | Africa      |  1967|   44.799|    6335506|   1508.453|
-| Cameroon  | French     | Africa      | Africa      |  1972|   47.049|    7021028|   1684.147|
-| Cameroon  | French     | Africa      | Africa      |  1977|   49.355|    7959865|   1783.433|
-| Cameroon  | French     | Africa      | Africa      |  1982|   52.961|    9250831|   2367.983|
-| Cameroon  | French     | Africa      | Africa      |  1987|   54.985|   10780667|   2602.664|
-| Cameroon  | French     | Africa      | Africa      |  1992|   54.314|   12467171|   1793.163|
-| Cameroon  | French     | Africa      | Africa      |  1997|   52.199|   14195809|   1694.337|
-| Cameroon  | French     | Africa      | Africa      |  2002|   49.856|   15929988|   1934.011|
-| Cameroon  | French     | Africa      | Africa      |  2007|   50.430|   17696293|   2042.095|
-| Brazil    | Portuguese | Americas    | Americas    |  1952|   50.917|   56602560|   2108.944|
-| Brazil    | Portuguese | Americas    | Americas    |  1957|   53.285|   65551171|   2487.366|
-| Brazil    | Portuguese | Americas    | Americas    |  1962|   55.665|   76039390|   3336.586|
-| Brazil    | Portuguese | Americas    | Americas    |  1967|   57.632|   88049823|   3429.864|
-| Brazil    | Portuguese | Americas    | Americas    |  1972|   59.504|  100840058|   4985.711|
-| Brazil    | Portuguese | Americas    | Americas    |  1977|   61.489|  114313951|   6660.119|
-| Brazil    | Portuguese | Americas    | Americas    |  1982|   63.336|  128962939|   7030.836|
-| Brazil    | Portuguese | Americas    | Americas    |  1987|   65.205|  142938076|   7807.096|
-| Brazil    | Portuguese | Americas    | Americas    |  1992|   67.057|  155975974|   6950.283|
-| Brazil    | Portuguese | Americas    | Americas    |  1997|   69.388|  168546719|   7957.981|
-| Brazil    | Portuguese | Americas    | Americas    |  2002|   71.006|  179914212|   8131.213|
-| Brazil    | Portuguese | Americas    | Americas    |  2007|   72.390|  190010647|   9065.801|
+| country | language | continent.x | continent.y |  year|  lifeExp|      pop|  gdpPercap|
+|:--------|:---------|:------------|:------------|-----:|--------:|--------:|----------:|
+| Albania | Albanian | Europe      | Europe      |  1952|   55.230|  1282697|   1601.056|
+| Albania | Albanian | Europe      | Europe      |  1957|   59.280|  1476505|   1942.284|
+| Albania | Albanian | Europe      | Europe      |  1962|   64.820|  1728137|   2312.889|
+| Albania | Albanian | Europe      | Europe      |  1967|   66.220|  1984060|   2760.197|
+| Albania | Albanian | Europe      | Europe      |  1972|   67.690|  2263554|   3313.422|
+| Albania | Albanian | Europe      | Europe      |  1977|   68.930|  2509048|   3533.004|
+| Albania | Albanian | Europe      | Europe      |  1982|   70.420|  2780097|   3630.881|
+| Albania | Albanian | Europe      | Europe      |  1987|   72.000|  3075321|   3738.933|
+| Albania | Albanian | Europe      | Europe      |  1992|   71.581|  3326498|   2497.438|
+| Albania | Albanian | Europe      | Europe      |  1997|   72.950|  3428038|   3193.055|
+| Albania | Albanian | Europe      | Europe      |  2002|   75.651|  3508512|   4604.212|
+| Albania | Albanian | Europe      | Europe      |  2007|   76.423|  3600523|   5937.030|
+| Austria | German   | Europe      | Europe      |  1952|   66.800|  6927772|   6137.076|
+| Austria | German   | Europe      | Europe      |  1957|   67.480|  6965860|   8842.598|
+| Austria | German   | Europe      | Europe      |  1962|   69.540|  7129864|  10750.721|
+| Austria | German   | Europe      | Europe      |  1967|   70.140|  7376998|  12834.602|
+| Austria | German   | Europe      | Europe      |  1972|   70.630|  7544201|  16661.626|
+| Austria | German   | Europe      | Europe      |  1977|   72.170|  7568430|  19749.422|
+| Austria | German   | Europe      | Europe      |  1982|   73.180|  7574613|  21597.084|
+| Austria | German   | Europe      | Europe      |  1987|   74.940|  7578903|  23687.826|
 
 Now that a common column is present, the join creates two columns, one for each of the joining data frames. It appends and x to the left dataset and a y to the right dataset.
 
 One way to avoid this is to filter out any unwanted repeat columns. Another way is to join on both country and continent. However, this has a drawback. If one table has a different spelling or category, it will treat the keys as different. For this reason, joining on unnecessary columns can be hazardous. I will demonstrate using an example
 
 ``` r
-# Introduce a capitalizatino difference
+# Introduce a capitalization difference
 manualData$continent[1] = "europe"
 
 manualData %>%
     left_join(gapminder, by = c("country", "continent")) %>%
+    head(20) %>%
     knitr::kable(bootabs = TRUE)
 ```
 
@@ -543,81 +584,28 @@ manualData %>%
     ## Warning: Column `continent` joining character vector and factor, coercing
     ## into character vector
 
-| country   | language   | continent |  year|  lifeExp|        pop|  gdpPercap|
-|:----------|:-----------|:----------|-----:|--------:|----------:|----------:|
-| Albania   | Albanian   | europe    |    NA|       NA|         NA|         NA|
-| Austria   | German     | Europe    |  1952|   66.800|    6927772|   6137.076|
-| Austria   | German     | Europe    |  1957|   67.480|    6965860|   8842.598|
-| Austria   | German     | Europe    |  1962|   69.540|    7129864|  10750.721|
-| Austria   | German     | Europe    |  1967|   70.140|    7376998|  12834.602|
-| Austria   | German     | Europe    |  1972|   70.630|    7544201|  16661.626|
-| Austria   | German     | Europe    |  1977|   72.170|    7568430|  19749.422|
-| Austria   | German     | Europe    |  1982|   73.180|    7574613|  21597.084|
-| Austria   | German     | Europe    |  1987|   74.940|    7578903|  23687.826|
-| Austria   | German     | Europe    |  1992|   76.040|    7914969|  27042.019|
-| Austria   | German     | Europe    |  1997|   77.510|    8069876|  29095.921|
-| Austria   | German     | Europe    |  2002|   78.980|    8148312|  32417.608|
-| Austria   | German     | Europe    |  2007|   79.829|    8199783|  36126.493|
-| Australia | English    | Oceania   |  1952|   69.120|    8691212|  10039.596|
-| Australia | English    | Oceania   |  1957|   70.330|    9712569|  10949.650|
-| Australia | English    | Oceania   |  1962|   70.930|   10794968|  12217.227|
-| Australia | English    | Oceania   |  1967|   71.100|   11872264|  14526.125|
-| Australia | English    | Oceania   |  1972|   71.930|   13177000|  16788.629|
-| Australia | English    | Oceania   |  1977|   73.490|   14074100|  18334.198|
-| Australia | English    | Oceania   |  1982|   74.740|   15184200|  19477.009|
-| Australia | English    | Oceania   |  1987|   76.320|   16257249|  21888.889|
-| Australia | English    | Oceania   |  1992|   77.560|   17481977|  23424.767|
-| Australia | English    | Oceania   |  1997|   78.830|   18565243|  26997.937|
-| Australia | English    | Oceania   |  2002|   80.370|   19546792|  30687.755|
-| Australia | English    | Oceania   |  2007|   81.235|   20434176|  34435.367|
-| Bolivia   | Spanish    | Americas  |  1952|   40.414|    2883315|   2677.326|
-| Bolivia   | Spanish    | Americas  |  1957|   41.890|    3211738|   2127.686|
-| Bolivia   | Spanish    | Americas  |  1962|   43.428|    3593918|   2180.973|
-| Bolivia   | Spanish    | Americas  |  1967|   45.032|    4040665|   2586.886|
-| Bolivia   | Spanish    | Americas  |  1972|   46.714|    4565872|   2980.331|
-| Bolivia   | Spanish    | Americas  |  1977|   50.023|    5079716|   3548.098|
-| Bolivia   | Spanish    | Americas  |  1982|   53.859|    5642224|   3156.510|
-| Bolivia   | Spanish    | Americas  |  1987|   57.251|    6156369|   2753.691|
-| Bolivia   | Spanish    | Americas  |  1992|   59.957|    6893451|   2961.700|
-| Bolivia   | Spanish    | Americas  |  1997|   62.050|    7693188|   3326.143|
-| Bolivia   | Spanish    | Americas  |  2002|   63.883|    8445134|   3413.263|
-| Bolivia   | Spanish    | Americas  |  2007|   65.554|    9119152|   3822.137|
-| Bulgaria  | Bulgarian  | Europe    |  1952|   59.600|    7274900|   2444.287|
-| Bulgaria  | Bulgarian  | Europe    |  1957|   66.610|    7651254|   3008.671|
-| Bulgaria  | Bulgarian  | Europe    |  1962|   69.510|    8012946|   4254.338|
-| Bulgaria  | Bulgarian  | Europe    |  1967|   70.420|    8310226|   5577.003|
-| Bulgaria  | Bulgarian  | Europe    |  1972|   70.900|    8576200|   6597.494|
-| Bulgaria  | Bulgarian  | Europe    |  1977|   70.810|    8797022|   7612.240|
-| Bulgaria  | Bulgarian  | Europe    |  1982|   71.080|    8892098|   8224.192|
-| Bulgaria  | Bulgarian  | Europe    |  1987|   71.340|    8971958|   8239.855|
-| Bulgaria  | Bulgarian  | Europe    |  1992|   71.190|    8658506|   6302.623|
-| Bulgaria  | Bulgarian  | Europe    |  1997|   70.320|    8066057|   5970.389|
-| Bulgaria  | Bulgarian  | Europe    |  2002|   72.140|    7661799|   7696.778|
-| Bulgaria  | Bulgarian  | Europe    |  2007|   73.005|    7322858|  10680.793|
-| Cameroon  | French     | Africa    |  1952|   38.523|    5009067|   1172.668|
-| Cameroon  | French     | Africa    |  1957|   40.428|    5359923|   1313.048|
-| Cameroon  | French     | Africa    |  1962|   42.643|    5793633|   1399.607|
-| Cameroon  | French     | Africa    |  1967|   44.799|    6335506|   1508.453|
-| Cameroon  | French     | Africa    |  1972|   47.049|    7021028|   1684.147|
-| Cameroon  | French     | Africa    |  1977|   49.355|    7959865|   1783.433|
-| Cameroon  | French     | Africa    |  1982|   52.961|    9250831|   2367.983|
-| Cameroon  | French     | Africa    |  1987|   54.985|   10780667|   2602.664|
-| Cameroon  | French     | Africa    |  1992|   54.314|   12467171|   1793.163|
-| Cameroon  | French     | Africa    |  1997|   52.199|   14195809|   1694.337|
-| Cameroon  | French     | Africa    |  2002|   49.856|   15929988|   1934.011|
-| Cameroon  | French     | Africa    |  2007|   50.430|   17696293|   2042.095|
-| Brazil    | Portuguese | Americas  |  1952|   50.917|   56602560|   2108.944|
-| Brazil    | Portuguese | Americas  |  1957|   53.285|   65551171|   2487.366|
-| Brazil    | Portuguese | Americas  |  1962|   55.665|   76039390|   3336.586|
-| Brazil    | Portuguese | Americas  |  1967|   57.632|   88049823|   3429.864|
-| Brazil    | Portuguese | Americas  |  1972|   59.504|  100840058|   4985.711|
-| Brazil    | Portuguese | Americas  |  1977|   61.489|  114313951|   6660.119|
-| Brazil    | Portuguese | Americas  |  1982|   63.336|  128962939|   7030.836|
-| Brazil    | Portuguese | Americas  |  1987|   65.205|  142938076|   7807.096|
-| Brazil    | Portuguese | Americas  |  1992|   67.057|  155975974|   6950.283|
-| Brazil    | Portuguese | Americas  |  1997|   69.388|  168546719|   7957.981|
-| Brazil    | Portuguese | Americas  |  2002|   71.006|  179914212|   8131.213|
-| Brazil    | Portuguese | Americas  |  2007|   72.390|  190010647|   9065.801|
+| country   | language | continent |  year|  lifeExp|       pop|  gdpPercap|
+|:----------|:---------|:----------|-----:|--------:|---------:|----------:|
+| Albania   | Albanian | europe    |    NA|       NA|        NA|         NA|
+| Austria   | German   | Europe    |  1952|   66.800|   6927772|   6137.076|
+| Austria   | German   | Europe    |  1957|   67.480|   6965860|   8842.598|
+| Austria   | German   | Europe    |  1962|   69.540|   7129864|  10750.721|
+| Austria   | German   | Europe    |  1967|   70.140|   7376998|  12834.602|
+| Austria   | German   | Europe    |  1972|   70.630|   7544201|  16661.626|
+| Austria   | German   | Europe    |  1977|   72.170|   7568430|  19749.422|
+| Austria   | German   | Europe    |  1982|   73.180|   7574613|  21597.084|
+| Austria   | German   | Europe    |  1987|   74.940|   7578903|  23687.826|
+| Austria   | German   | Europe    |  1992|   76.040|   7914969|  27042.019|
+| Austria   | German   | Europe    |  1997|   77.510|   8069876|  29095.921|
+| Austria   | German   | Europe    |  2002|   78.980|   8148312|  32417.608|
+| Austria   | German   | Europe    |  2007|   79.829|   8199783|  36126.493|
+| Australia | English  | Oceania   |  1952|   69.120|   8691212|  10039.596|
+| Australia | English  | Oceania   |  1957|   70.330|   9712569|  10949.650|
+| Australia | English  | Oceania   |  1962|   70.930|  10794968|  12217.227|
+| Australia | English  | Oceania   |  1967|   71.100|  11872264|  14526.125|
+| Australia | English  | Oceania   |  1972|   71.930|  13177000|  16788.629|
+| Australia | English  | Oceania   |  1977|   73.490|  14074100|  18334.198|
+| Australia | English  | Oceania   |  1982|   74.740|  15184200|  19477.009|
 
 Notice how the data from `gapminder` for Albania is now filtered because Europe is spelled differently.
 
@@ -629,6 +617,7 @@ manualData$year = rep(1997, nrow(manualData))
 
 manualData %>%
     left_join(gapminder, by = c("country", "year")) %>%
+    head(20) %>%
     knitr::kable(bootabs = TRUE)
 ```
 
@@ -671,7 +660,7 @@ I will only print the first 20 columns of each table, to keep the document lengt
 # Inner Join
 manualData %>%
     merge(gapminder, by = c("country", "continent")) %>%
-    filter(row_number() %in% 1:20) %>%
+    head(20) %>%
     knitr::kable(bootabs = TRUE)
 ```
 
@@ -702,7 +691,7 @@ manualData %>%
 # Outer Join
 manualData %>%
     merge(gapminder, by = c("country", "continent"), all = TRUE) %>%
-    filter(row_number() %in% 1:20) %>%
+    head(20) %>%
     knitr::kable(bootabs = TRUE)
 ```
 
@@ -733,7 +722,7 @@ manualData %>%
 # Outer Join
 manualData %>%
     merge(gapminder, by = c("country", "continent"), all.x = TRUE) %>%
-    filter(row_number() %in% 1:20) %>%
+    head(20) %>%
     knitr::kable(bootabs = TRUE)
 ```
 
