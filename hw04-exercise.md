@@ -5,13 +5,14 @@ Glenn McGuinness
 -   [Introduction](#introduction)
 -   [Tasks](#tasks)
     -   [Task 1: Data Reshaping - Activity 2](#task-1-data-reshaping---activity-2)
-    -   [Task 2: Joins - Activity 1](#task-2-joins---activity-1)
--   [Additional Task: Joins - Activity 3](#additional-task-joins---activity-3)
+    -   [Task 2: Data Reshaping: Activity 3](#task-2-data-reshaping-activity-3)
+    -   [Task 3: Joins - Activity 1](#task-3-joins---activity-1)
+    -   [Task 4: Joins - Activity 3](#task-4-joins---activity-3)
 
 Introduction
 ------------
 
-The goal of this assignment is to use data wrangling to solve realistic problems. One of the new tools to be used in this assignement will be data frame joins and reshaping. To this end, one data reshaping and one join prompt wil be taken from the given in the assignment. I have also taken an additional join prompt, activity 3.
+The goal of this assignment is to use data wrangling to solve realistic problems. One of the new tools to be used in this assignement will be data frame joins and reshaping. To this end, one data reshaping and one join prompt wil be taken from the given in the assignment. I have also taken an additional data reshaping prompt and join prompt.
 
 Tasks
 -----
@@ -26,13 +27,13 @@ This activity is described as follows:
 >
 > -   Take advantage of this new data shape to scatterplot life expectancy for one country against that of another.
 
-I will make the data for this assignment from the gapminder dataset. Forthis task, I will look at the life expectancy of `Canada`, the `United States`, the `United Kingdom`, and `China`.
+I will make the data for this assignment from the `gapminder` dataset. Forthis task, I will look at the life expectancy of `Canada`, the `United States`, the `United Kingdom`, and `China`.
 
 ``` r
 suppressPackageStartupMessages(library(gapminder))
 
 # Make the dataset for this assignment
-gapLifeExp = gapminder %>%
+gapLifeExp = `gapminder` %>%
     filter(country %in% c("Canada", "United States", "United Kingdom", "China")) %>%
     select(country, year, lifeExp)
 ```
@@ -85,11 +86,94 @@ Note, the x and y axis do not have the same ranges. `China` experienced a much l
 
 From this plot, it is clear that `China` increased it's life expectancy from below fifty to above sixty at a much more rapid rate than `Canada`. After `China` had a life expectancy of low sixties, it's rate of growth slowed in relation to that of `Canada`.
 
-### Task 2: Joins - Activity 1
+### Task 2: Data Reshaping: Activity 3
+
+I wanted to further explore data reshaping, so I decided to do another task. The task is described as follows:
+
+> Compute some measure of life expectancy (mean? median? min? max?) for all possible combinations of continent and year. Reshape that to have one row per year and one variable for each continent. Or the other way around: one row per continent and one variable per year.
+>
+> Use knitr::kable() to make these tables look pretty in your rendered homework.
+>
+> Is there a plot that is easier to make with the data in this shape versis the usual form? If so (or you think so), try it! Reflect.
+
+For this task, I will be using the `gapminder` dataset. I want to look at the median of the life expectancy of each continent in each year. To accomplish this, I can utilize functions from dplyr, in particular the spread() function. Once I have this result, I would like to display these results in an easily readable format. Given the purpose of this assignment is to explore data reshaping, I will generate one table with one row per year and one variable per continent and vice versa.
+
+``` r
+# This data.frame will be used several times, so I will store it
+# The group_by and summarise functions group and calculate the required summary statistics.
+gapminderLifeExpSummary = `gapminder` %>%
+  group_by(continent, year) %>%
+  summarise(lifeExpMedianByContinentYear = median(lifeExp))
+
+# Make a table with one year per row and continents in the columns
+# The spread function reshapes the data for display, and the kable function displays the results nicely
+gapminderLifeExpSummary %>%
+  spread(key = continent, value = lifeExpMedianByContinentYear) %>%
+  knitr::kable(booktabs = TRUE)
+```
+
+|  year|   Africa|  Americas|    Asia|   Europe|  Oceania|
+|-----:|--------:|---------:|-------:|--------:|--------:|
+|  1952|  38.8330|    54.745|  44.869|  65.9000|  69.2550|
+|  1957|  40.5925|    56.074|  48.284|  67.6500|  70.2950|
+|  1962|  42.6305|    58.299|  49.325|  69.5250|  71.0850|
+|  1967|  44.6985|    60.523|  53.655|  70.6100|  71.3100|
+|  1972|  47.0315|    63.441|  56.950|  70.8850|  71.9100|
+|  1977|  49.2725|    66.353|  60.765|  72.3350|  72.8550|
+|  1982|  50.7560|    67.405|  63.739|  73.4900|  74.2900|
+|  1987|  51.6395|    69.498|  66.295|  74.8150|  75.3200|
+|  1992|  52.4290|    69.862|  68.690|  75.4510|  76.9450|
+|  1997|  52.7590|    72.146|  70.265|  76.1160|  78.1900|
+|  2002|  51.2355|    72.047|  71.028|  77.5365|  79.7400|
+|  2007|  52.9265|    72.899|  72.396|  78.6085|  80.7195|
+
+``` r
+# Make a table with one continent per row and years in the columns
+# The only difference with the above code is that the key argument is now year
+gapminderLifeExpSummary %>%
+  spread(key = year, value = lifeExpMedianByContinentYear) %>%
+  knitr::kable(booktabs = TRUE)
+```
+
+| continent |    1952|     1957|     1962|     1967|     1972|     1977|    1982|     1987|    1992|    1997|     2002|     2007|
+|:----------|-------:|--------:|--------:|--------:|--------:|--------:|-------:|--------:|-------:|-------:|--------:|--------:|
+| Africa    |  38.833|  40.5925|  42.6305|  44.6985|  47.0315|  49.2725|  50.756|  51.6395|  52.429|  52.759|  51.2355|  52.9265|
+| Americas  |  54.745|  56.0740|  58.2990|  60.5230|  63.4410|  66.3530|  67.405|  69.4980|  69.862|  72.146|  72.0470|  72.8990|
+| Asia      |  44.869|  48.2840|  49.3250|  53.6550|  56.9500|  60.7650|  63.739|  66.2950|  68.690|  70.265|  71.0280|  72.3960|
+| Europe    |  65.900|  67.6500|  69.5250|  70.6100|  70.8850|  72.3350|  73.490|  74.8150|  75.451|  76.116|  77.5365|  78.6085|
+| Oceania   |  69.255|  70.2950|  71.0850|  71.3100|  71.9100|  72.8550|  74.290|  75.3200|  76.945|  78.190|  79.7400|  80.7195|
+
+The advantage of this reshaped data is that it can make plots easier to read and interpret. They have the added advantage that it makes it easier to produce scatter plots of different continents by year or different years by continent, depending on whether there is one continent or year by row, respectively. The following code snippet provides an example for each.
+
+``` r
+# Make a scatter plot, comparing different continents across years
+gapminderLifeExpSummary %>%
+  spread(key = continent, value = lifeExpMedianByContinentYear) %>%
+  ggplot(aes(x = Africa, y = Americas, colour = year)) +
+  geom_point(size = 4) +
+  theme_bw()
+```
+
+![](hw04-exercise_files/figure-markdown_github/task2Reshape1-1.png)
+
+``` r
+# Make a scatter plot, comparing different years across continents
+gapminderLifeExpSummary %>%
+  spread(key = year, value = lifeExpMedianByContinentYear)  %>%
+  ggplot(aes(x = `1952`, y = `1957`, colour = continent)) +
+  geom_point(size = 4) +
+  theme_bw()
+```
+
+![](hw04-exercise_files/figure-markdown_github/task2Reshape1-2.png)
+
+Overall, this form of reshaping makes it very easy to see the relationship across the key values in the reshaping, across two values in the rows. This is because `ggplot` expects that each variable specified in the aes function has a separate column. This reshaping produces a more natural shape for the above plots.
+
+### Task 3: Joins - Activity 1
 
 This activity is described as follows:
 
-> Create a second data frame, complementary to Gapminder. Join this with (part of) Gapminder using a dplyr join function and make some observations about the process and result. Explore the different types of joins. Examples of a second data frame you could build:
+> Create a second data frame, complementary to Gapminder. Join this with (part of) `gapminder` using a `dplyr` join function and make some observations about the process and result. Explore the different types of joins. Examples of a second data frame you could build:
 >
 > -   One row per country, a country variable and one or more variables with extra info, such as language spoken, NATO membership, national animal, or capitol city.
 >
@@ -120,7 +204,7 @@ This should be a sufficient number of overlap to perform this task.
 
 Now that the dataset is present, let's try some different scenarios.
 
-First, lets try a scenario where we wish to get the `income` and `capitol` of each country for every row of the gapminder dataset. The `wbCountry` dataset does not have any year data, so we will need to join only on country, which is not unique. This table will be trimmed to `20` elements, so as to not fill up the document.
+First, lets try a scenario where we wish to get the `income` and `capitol` of each country for every row of the `gapminder` dataset. The `wbCountry` dataset does not have any year data, so we will need to join only on country, which is not unique. This table will be trimmed to `20` elements, so as to not fill up the document.
 
 I will store the subset of `wbCountry` in the variable `wbCountryJoin`, as I will use it several times.
 
@@ -563,8 +647,7 @@ manualData %>%
 
 This demonstrates how to use a join on multiple columns.
 
-Additional Task: Joins - Activity 3
------------------------------------
+### Task 4: Joins - Activity 3
 
 This is a short additional activity that I will be performing as an add-on to the previous activity.
 
@@ -572,13 +655,13 @@ It is described as follows:
 
 > This is really an optional add-on to either of the previous activities.
 >
-> -   Explore the base R function merge(), which also does joins. Compare and contrast with dplyr joins.
+> -   Explore the base R function merge(), which also does joins. Compare and contrast with `dplyr` joins.
 >
 > -   Explore the base R function match(), which is related to joins and merges, but is really more of a “table lookup”. Compare and contrast with a true join/merge.
 >
 I will first look at merge(). Like the \*\_join() function in dplyr, the merge function is based on SQL joins. Given that SQL has dominated tabular databases for a long time, this is unsurprising.
 
-Both merge() and the dplyr joins contain the standard set of left, right, inner, and outer joins. This means that both functions largely the same functionality. The main difference between the two is the intuitive syntax provided by dplyr, which has separate functions for each type of join. The base merge() function has a long list of arguments that can be daunting for a beginner.
+Both merge() and the `dplyr` joins contain the standard set of left, right, inner, and outer joins. This means that both functions largely the same functionality. The main difference between the two is the intuitive syntax provided by dplyr, which has separate functions for each type of join. The base merge() function has a long list of arguments that can be daunting for a beginner.
 
 Here are a few examples, using the data from the previous section. I will show an inner join, full (outer) join, and a left join using one or multiple columns to demonstrate this. By default, merge performs an inner join. However, specifying all, all.x, and all.y to be true, it can perform a outer, left, and right join, respectively.
 
@@ -637,7 +720,6 @@ manualData %>%
 | Afghanistan | Asia      | NA       |      NA|    1997|   41.763|  22227415|   635.3414|
 | Afghanistan | Asia      | NA       |      NA|    2002|   42.129|  25268405|   726.7341|
 | Afghanistan | Asia      | NA       |      NA|    2007|   43.828|  31889923|   974.5803|
-| Albania     | europe    | Albanian |    1997|      NA|       NA|        NA|         NA|
 | Albania     | Europe    | NA       |      NA|    1952|   55.230|   1282697|  1601.0561|
 | Albania     | Europe    | NA       |      NA|    1957|   59.280|   1476505|  1942.2842|
 | Albania     | Europe    | NA       |      NA|    1962|   64.820|   1728137|  2312.8890|
@@ -645,6 +727,7 @@ manualData %>%
 | Albania     | Europe    | NA       |      NA|    1972|   67.690|   2263554|  3313.4222|
 | Albania     | Europe    | NA       |      NA|    1977|   68.930|   2509048|  3533.0039|
 | Albania     | Europe    | NA       |      NA|    1982|   70.420|   2780097|  3630.8807|
+| Albania     | Europe    | NA       |      NA|    1987|   72.000|   3075321|  3738.9327|
 
 ``` r
 # Outer Join
@@ -677,9 +760,9 @@ manualData %>%
 | Austria   | Europe    | German   |    1997|    1982|   73.180|   7574613|   21597.08|
 | Austria   | Europe    | German   |    1997|    1997|   77.510|   8069876|   29095.92|
 
-Another benefit of the dplyr joins is that row order is guaranteed to be preserved, which it is not with merge ([source](https://rstudio-pubs-static.s3.amazonaws.com/293454_556209d0e42141ab8cb7674644445dcd.html)). I will not show an example of a loss of row order as a loss of row order is possible, but not guaranteed. This makes an example less easy to find.
+Another benefit of the `dplyr` joins is that row order is guaranteed to be preserved, which it is not with merge ([source](https://rstudio-pubs-static.s3.amazonaws.com/293454_556209d0e42141ab8cb7674644445dcd.html)). I will not show an example of a loss of row order as a loss of row order is possible, but not guaranteed. This makes an example less easy to find.
 
-Finally, dplyr joins can be applied to databases or spark Another benefit of the dplyr joins is that row order is guaranteed to be preserved, which it is not with merge ([source](https://rstudio-pubs-static.s3.amazonaws.com/293454_556209d0e42141ab8cb7674644445dcd.html)). This is very useful, as it allows the user to explore different data structures with the same API, making code more general, reusable, and readable.
+Finally, `dplyr` joins can be applied to databases or spark Another benefit of the `dplyr` joins is that row order is guaranteed to be preserved, which it is not with merge ([source](https://rstudio-pubs-static.s3.amazonaws.com/293454_556209d0e42141ab8cb7674644445dcd.html)). This is very useful, as it allows the user to explore different data structures with the same API, making code more general, reusable, and readable.
 
 The second part of this task is about the match() function. This function is related to joins. It matches one vector to another, returning what elements from argument one are contained in argument 2 and returns a vector of indices of the matches. These indices correspond to argument 2.
 
@@ -699,7 +782,7 @@ A related syntax is %in%, which returns a logical vectors of trues or falses bas
 
 This is related to a join because it finds common elements between two datasets, in this case vectors. However, the match() function does not perform any data joining. It simply indicates whether there is an intersection
 
-The match() function can be used to perform a manual join in some cases, albeit a difficult and very inefficient one. I will show an example of this here. I will perform an inner join with the left dataset being `manualData` and the right dataset being `gapminder`. I will only keep one year from gapminder to make this example more straightforward.
+The match() function can be used to perform a manual join in some cases, albeit a difficult and very inefficient one. I will show an example of this here. I will perform an inner join with the left dataset being `manualData` and the right dataset being `gapminder`. I will only keep one year from `gapminder` to make this example more straightforward.
 
 Note that this will be slightly messy, as this is not the best tool for the task. It is only meant to demonstrate a point.
 

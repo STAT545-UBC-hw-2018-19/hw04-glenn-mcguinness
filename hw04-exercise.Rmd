@@ -8,7 +8,7 @@ output:
 
 ## Introduction
 
-The goal of this assignment is to use data wrangling to solve realistic problems. One of the new tools to be used in this assignement will be data frame joins and reshaping. To this end, one data reshaping and one join prompt wil be taken from the given in the assignment. I have also taken an additional join prompt, activity 3.
+The goal of this assignment is to use data wrangling to solve realistic problems. One of the new tools to be used in this assignement will be data frame joins and reshaping. To this end, one data reshaping and one join prompt wil be taken from the given in the assignment. I have also taken an additional data reshaping prompt and join prompt.
 
 ```{r ImportLibraries, echo = FALSE}
 suppressPackageStartupMessages(library(tidyverse))
@@ -26,13 +26,13 @@ This activity is described as follows:
 >
 >   - Take advantage of this new data shape to scatterplot life expectancy for one country against that of another. \
 
-I will make the data for this assignment from the gapminder dataset. Forthis task, I will look at the life expectancy of `Canada`, the `United States`, the `United Kingdom`, and `China`.
+I will make the data for this assignment from the `gapminder` dataset. Forthis task, I will look at the life expectancy of `Canada`, the `United States`, the `United Kingdom`, and `China`.
 
 ```{r task1MakeDataset}
 suppressPackageStartupMessages(library(gapminder))
 
 # Make the dataset for this assignment
-gapLifeExp = gapminder %>%
+gapLifeExp = `gapminder` %>%
     filter(country %in% c("Canada", "United States", "United Kingdom", "China")) %>%
     select(country, year, lifeExp)
 ```
@@ -68,11 +68,64 @@ Note, the x and y axis do not have the same ranges. `China` experienced a much l
 
 From this plot, it is clear that `China` increased it's life expectancy from below fifty to above sixty at a much more rapid rate than `Canada`. After `China` had a life expectancy of low sixties, it's rate of growth slowed in relation to that of `Canada`.
 
-### Task 2: Joins - Activity 1
+### Task 2: Data Reshaping: Activity 3
+
+I wanted to further explore data reshaping, so I decided to do another task. The task is described as follows:
+
+> Compute some measure of life expectancy (mean? median? min? max?) for all possible combinations of continent and year. Reshape that to have one row per year and one variable for each continent. Or the other way around: one row per continent and one variable per year.
+>
+> Use knitr::kable() to make these tables look pretty in your rendered homework.
+> 
+> Is there a plot that is easier to make with the data in this shape versis the usual form? If so (or you think so), try it! Reflect.
+
+For this task, I will be using the `gapminder` dataset. I want to look at the median of the life expectancy of each continent in each year. To accomplish this, I can utilize functions from dplyr, in particular the spread() function. Once I have this result, I would like to display these results in an easily readable format. Given the purpose of this assignment is to explore data reshaping, I will generate one table with one row per year and one variable per continent and vice versa.
+
+```{r task2Reshape1 = 'asis'}
+# This data.frame will be used several times, so I will store it
+# The group_by and summarise functions group and calculate the required summary statistics.
+gapminderLifeExpSummary = `gapminder` %>%
+  group_by(continent, year) %>%
+  summarise(lifeExpMedianByContinentYear = median(lifeExp))
+
+# Make a table with one year per row and continents in the columns
+# The spread function reshapes the data for display, and the kable function displays the results nicely
+gapminderLifeExpSummary %>%
+  spread(key = continent, value = lifeExpMedianByContinentYear) %>%
+  knitr::kable(booktabs = TRUE)
+
+# Make a table with one continent per row and years in the columns
+# The only difference with the above code is that the key argument is now year
+gapminderLifeExpSummary %>%
+  spread(key = year, value = lifeExpMedianByContinentYear) %>%
+  knitr::kable(booktabs = TRUE)
+```
+
+The advantage of this reshaped data is that it can make plots easier to read and interpret. They have the added advantage that it makes it easier to produce scatter plots of different continents by year or different years by continent, depending on whether there is one continent or year by row, respectively. The following code snippet provides an example for each.
+
+
+```{r task2Reshape1, fig.width = 10}
+# Make a scatter plot, comparing different continents across years
+gapminderLifeExpSummary %>%
+  spread(key = continent, value = lifeExpMedianByContinentYear) %>%
+  ggplot(aes(x = Africa, y = Americas, colour = year)) +
+  geom_point(size = 4) +
+  theme_bw()
+
+# Make a scatter plot, comparing different years across continents
+gapminderLifeExpSummary %>%
+  spread(key = year, value = lifeExpMedianByContinentYear)  %>%
+  ggplot(aes(x = `1952`, y = `1957`, colour = continent)) +
+  geom_point(size = 4) +
+  theme_bw()
+```
+
+Overall, this form of reshaping makes it very easy to see the relationship across the key values in the reshaping, across two values in the rows. This is because `ggplot` expects that each variable specified in the aes function has a separate column. This reshaping produces a more natural shape for the above plots.
+
+### Task 3: Joins - Activity 1
 
 This activity is described as follows:
 
-> Create a second data frame, complementary to Gapminder. Join this with (part of) Gapminder using a dplyr join function and make some observations about the process and result. Explore the different types of joins. Examples of a second data frame you could build: 
+> Create a second data frame, complementary to Gapminder. Join this with (part of) `gapminder` using a `dplyr` join function and make some observations about the process and result. Explore the different types of joins. Examples of a second data frame you could build: 
 >
 >   - One row per country, a country variable and one or more variables with extra info, such as language spoken, NATO membership, national animal, or capitol city. 
 >
@@ -88,7 +141,7 @@ install.packages("wbstats")
 
 I would like to check to see how many countries exist in both datasets with the same name. I can do that using the intersect function.
 
-```{r task2CheckCommon}
+```{r task3CheckCommon}
 # Load dataset
 suppressPackageStartupMessages(library(wbstats))
 
@@ -101,11 +154,11 @@ This should be a sufficient number of overlap to perform this task.
 
 Now that the dataset is present, let's try some different scenarios.
 
-First, lets try a scenario where we wish to get the `income` and `capitol` of each country for every row of the gapminder dataset. The `wbCountry` dataset does not have any year data, so we will need to join only on country, which is not unique. This table will be trimmed to `20` elements, so as to not fill up the document.
+First, lets try a scenario where we wish to get the `income` and `capitol` of each country for every row of the `gapminder` dataset. The `wbCountry` dataset does not have any year data, so we will need to join only on country, which is not unique. This table will be trimmed to `20` elements, so as to not fill up the document.
 
 I will store the subset of `wbCountry` in the variable `wbCountryJoin`, as I will use it several times.
 
-```{r task2Join1 = 'asis'}
+```{r task3Join1 = 'asis'}
 wbCountryJoin = wbCountry %>%
     select(country, capital, income) 
 
@@ -119,7 +172,7 @@ This table joined a subset of wbCountry to the `gapminder` dataset, repeating th
 
 Let's see what happens when do the same operation, but with a right join.
 
-```{r task2Join2 = 'asis'}
+```{r task3Join2 = 'asis'}
 wbCountryJoin %>%
     left_join(gapminder, by = "country") %>%
     filter(row_number() < 20) %>%
@@ -130,7 +183,7 @@ The resulting data frame is very similar to the one before. The `wbCountry` rows
 
 If information from both datasets is necessary, an inner join can be used. Alternatively, if all observations are important, even if incomplete, a full join can be used.
 
-```{r task2Join3 = 'asis'}
+```{r task3Join3 = 'asis'}
 wbCountryJoin %>%
     inner_join(gapminder, by = "country") %>%
     filter(row_number() < 20) %>%
@@ -146,7 +199,7 @@ The only difference between these joins are whether they do or don't keep rows w
 
 Another useful tool are filetering joins. These joins allow a dataset to be filtered based on it's overlap with another. For example, someone may want to analyse data in the `wbCountryJoin` dataset separately based on whether the country is present in the `gapminder` dataset, without having data from `gapminder`.
 
-```{r task2Join3 = 'asis'}
+```{r task3Join3 = 'asis'}
 wbCountryJoin %>%
     semi_join(gapminder, by = "country") %>%
     filter(row_number() < 20) %>%
@@ -162,7 +215,7 @@ These two datasets still only contain columns from `wbCountryJoin`, but are easi
 
 To get some additional insight into a more complicated dataset, I will create another dataset manually.
 
-```{r task2MakeData = 'asis'}
+```{r task3MakeData = 'asis'}
 manualData = tibble(
     country = c("Albania", "Austria", "Australia", "Bolivia", "Bulgaria", "Cameroon", "Brazil"),
     language = c("Albanian", "German", "English", "Spanish", "Bulgarian", "French", "Portuguese"),
@@ -171,7 +224,7 @@ manualData = tibble(
 
 This dataset has one column that is in common with `gapminder`, `continent`. Let's see what happens when we perform a join on country.
 
-```{r task2Join4 = 'asis'}
+```{r task3Join4 = 'asis'}
 manualData %>%
     inner_join(gapminder, by = "country") %>%
     knitr::kable(bootabs = TRUE)
@@ -181,7 +234,7 @@ Now that a common column is present, the join creates two columns, one for each 
 
 One way to avoid this is to filter out any unwanted repeat columns. Another way is to join on both country and continent. However, this has a drawback. If one table has a different spelling or category, it will treat the keys as different. For this reason, joining on unnecessary columns can be hazardous. I will demonstrate using an example
 
-```{r task2Join5 = 'asis'}
+```{r task3Join5 = 'asis'}
 # Introduce a capitalizatino difference
 manualData$continent[1] = "europe"
 
@@ -194,7 +247,7 @@ Notice how the data from `gapminder` for Albania is now filtered because Europe 
 
 Joining on two columns can be useful if it provides additional information. Say, for example, the `manualData` dataset was collected in a given year and we expect that the primary language of one of the countries might have changed over time. In this case, we may want to join by country and year so that only the appropriate year will be included in the result.
 
-```{r task2Join6 = 'asis'}
+```{r task3Join6 = 'asis'}
 # Create a year columns
 manualData$year = rep(1997, nrow(manualData))
 
@@ -205,7 +258,7 @@ manualData %>%
 
 This demonstrates how to use a join on multiple columns.
 
-## Additional Task: Joins - Activity 3
+### Task 4: Joins - Activity 3
 
 This is a short additional activity that I will be performing as an add-on to the previous activity.
 
@@ -213,19 +266,19 @@ It is described as follows:
 
 > This is really an optional add-on to either of the previous activities.
 >
->   - Explore the base R function merge(), which also does joins. Compare and contrast with dplyr joins.
+>   - Explore the base R function merge(), which also does joins. Compare and contrast with `dplyr` joins.
 >
 >   - Explore the base R function match(), which is related to joins and merges, but is really more of a “table lookup”. Compare and contrast with a true join/merge.
 
 I will first look at merge(). Like the *_join() function in dplyr, the merge function is based on SQL joins. Given that SQL has dominated tabular databases for a long time, this is unsurprising. 
 
-Both merge() and the dplyr joins contain the standard set of left, right, inner, and outer joins. This means that both functions largely the same functionality. The main difference between the two is the intuitive syntax provided by dplyr, which has separate functions for each type of join. The base merge() function has a long list of arguments that can be daunting for a beginner.
+Both merge() and the `dplyr` joins contain the standard set of left, right, inner, and outer joins. This means that both functions largely the same functionality. The main difference between the two is the intuitive syntax provided by dplyr, which has separate functions for each type of join. The base merge() function has a long list of arguments that can be daunting for a beginner.
 
 Here are a few examples, using the data from the previous section. I will show an inner join, full (outer) join, and a left join using one or multiple columns to demonstrate this. By default, merge performs an inner join. However, specifying all, all.x, and all.y to be true, it can perform a outer, left, and right join, respectively.
 
 I will only print the first 20 columns of each table, to keep the document length reasonable.
 
-```{r task3Join1 = 'asis'}
+```{r task4Join1 = 'asis'}
 # Inner Join
 manualData %>%
     merge(gapminder, by = c("country", "continent")) %>%
@@ -245,29 +298,29 @@ manualData %>%
     knitr::kable(bootabs = TRUE)
 ```
 
-Another benefit of the dplyr joins is that row order is guaranteed to be preserved, which it is not with merge ([source](https://rstudio-pubs-static.s3.amazonaws.com/293454_556209d0e42141ab8cb7674644445dcd.html)). I will not show an example of a loss of row order as a loss of row order is possible, but not guaranteed. This makes an example less easy to find.
+Another benefit of the `dplyr` joins is that row order is guaranteed to be preserved, which it is not with merge ([source](https://rstudio-pubs-static.s3.amazonaws.com/293454_556209d0e42141ab8cb7674644445dcd.html)). I will not show an example of a loss of row order as a loss of row order is possible, but not guaranteed. This makes an example less easy to find.
 
-Finally, dplyr joins can be applied to databases or spark Another benefit of the dplyr joins is that row order is guaranteed to be preserved, which it is not with merge ([source](https://rstudio-pubs-static.s3.amazonaws.com/293454_556209d0e42141ab8cb7674644445dcd.html)). This is very useful, as it allows the user to explore different data structures with the same API, making code more general, reusable, and readable.
+Finally, `dplyr` joins can be applied to databases or spark Another benefit of the `dplyr` joins is that row order is guaranteed to be preserved, which it is not with merge ([source](https://rstudio-pubs-static.s3.amazonaws.com/293454_556209d0e42141ab8cb7674644445dcd.html)). This is very useful, as it allows the user to explore different data structures with the same API, making code more general, reusable, and readable.
 
 The second part of this task is about the match() function. This function is related to joins. It matches one vector to another, returning what elements from argument one are contained in argument 2 and returns a vector of indices of the matches. These indices correspond to argument 2.
 
-```{r task3Match1}
+```{r task4Match1}
 match(2:8, 1:10)
 ```
 
 A related syntax is \%in\%, which returns a logical vectors of trues or falses based on whether the element of argument 1 has a match in argument 2.
 
-```{r task3Match2}
+```{r task4Match2}
 1:10 %in% 2:8
 ```
 
 This is related to a join because it finds common elements between two datasets, in this case vectors. However, the match() function does not perform any data joining. It simply indicates whether there is an intersection
 
-The match() function can be used to perform a manual join in some cases, albeit a difficult and very inefficient one. I will show an example of this here. I will perform an inner join with the left dataset being `manualData` and the right dataset being `gapminder`. I will only keep one year from gapminder to make this example more straightforward.
+The match() function can be used to perform a manual join in some cases, albeit a difficult and very inefficient one. I will show an example of this here. I will perform an inner join with the left dataset being `manualData` and the right dataset being `gapminder`. I will only keep one year from `gapminder` to make this example more straightforward.
 
 Note that this will be slightly messy, as this is not the best tool for the task. It is only meant to demonstrate a point.
 
-```{r task3Match3 = 'asis'}
+```{r task4Match3 = 'asis'}
 # Get the rows from manual data
 gapminderDataSubset = gapminder[match(manualData$country, gapminder$country),]
 
